@@ -28,7 +28,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # DATABASE INIT
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Warning: Could not initialize database: {e}")
 
 app = FastAPI(title="PhishGuard - Phishing Detection System")
 
@@ -68,9 +71,8 @@ except Exception as e:
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
-# Create directories if they don't exist (helpful for local setup)
-os.makedirs(STATIC_DIR, exist_ok=True)
-os.makedirs(TEMPLATE_DIR, exist_ok=True)
+# Note: os.makedirs removed as Vercel is read-only.
+# Ensure directories exist in your repository.
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
@@ -80,6 +82,9 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception as e:
+        print(f"Database Session Error: {e}")
+        raise
     finally:
         db.close()
 
