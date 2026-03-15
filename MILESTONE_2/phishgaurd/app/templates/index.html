@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard | Secure Browsing</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Raleway:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --accent: #f43f5e;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Raleway', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        nav {
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            margin-left: 2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--primary);
+        }
+
+        /* Views */
+        .view-section {
+            display: none;
+            padding: 8rem 5% 5rem;
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .view-section.active {
+            display: flex;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1,
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        /* Cards & Forms */
+        .card-container {
+            background: var(--glass);
+            padding: 3rem;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-container {
+            max-width: 400px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            transition: 0.3s;
+            width: 100%;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            color: var(--dark);
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: 100%;
+        }
+
+        button.inline-btn {
+            width: auto;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        #result {
+            margin-top: 2rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 1rem;
+            border-radius: 12px;
+            display: none;
+            text-align: center;
+        }
+
+        .phishing {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fb7185;
+            border: 1px solid var(--accent);
+        }
+
+        .safe {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border: 1px solid #22c55e;
+        }
+
+        .error {
+            color: var(--accent);
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .success {
+            color: #4ade80;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 2rem;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.5rem;
+        }
+
+        .chart-container-global {
+            width: 100%;
+            max-width: 400px;
+            margin: 3rem auto 0;
+            background: var(--glass);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* History Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.2);
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .badge.phishing {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fb7185;
+        }
+
+        .badge.safe {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .delete-btn {
+            background: rgba(244, 63, 94, 0.8);
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            border-radius: 8px;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: var(--accent);
+            box-shadow: 0 5px 15px rgba(244, 63, 94, 0.4);
+        }
+
+        /* Chatbot Styles */
+        #chatbot-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        #chat-window {
+            width: 350px;
+            height: 450px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            border-radius: 20px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        #chat-header {
+            padding: 1rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: var(--dark);
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .message {
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            max-width: 85%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .bot-message {
+            background: rgba(255, 255, 255, 0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .user-message {
+            background: var(--primary);
+            color: var(--dark);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+            font-weight: 600;
+        }
+
+        #chat-input-area {
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        #chat-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.6rem 1rem;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        #chat-send {
+            padding: 0.6rem;
+            width: auto;
+            border-radius: 10px;
+        }
+
+        #chat-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0, 242, 254, 0.4);
+            transition: 0.3s;
+        }
+
+        #chat-toggle:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        #chat-toggle svg {
+            width: 30px;
+            height: 30px;
+            fill: var(--dark);
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo" onclick="showView('home')">PHISHGUARD</div>
+        <div class="nav-links" id="navLinks">
+            <a onclick="showView('home')">Home</a>
+            <a onclick="showView('login')" id="navLogin">Login</a>
+            <a onclick="showView('signup')" id="navSignup">Sign Up</a>
+        </div>
+    </nav>
+
+    <!-- HOME VIEW -->
+    <section id="view-home" class="view-section active">
+        <h1>Detect Phishing Instantly</h1>
+        <p class="subtitle">Our AI-powered engine analyzes URLs in real-time to protect you from malicious websites and
+            data theft.</p>
+
+        <div class="card-container">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Enter URL to check (e.g. https://google.com)">
+                <button class="inline-btn" onclick="checkURL()">Analyze</button>
+            </div>
+            <div id="result"></div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-box">
+                <div class="stat-value" id="statTotal">-</div>
+                <div class="stat-label">Total Scans</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="statPhishing">-</div>
+                <div class="stat-label">Threats Blocked</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="statSafe">-</div>
+                <div class="stat-label">Safe URLs Checked</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="statAvgConf">-</div>
+                <div class="stat-label">Avg Confidence</div>
+            </div>
+        </div>
+
+        <div class="chart-container-global" id="globalChartContainer" style="display: none;">
+            <canvas id="globalStatsChart"></canvas>
+        </div>
+    </section>
+
+    <!-- LOGIN VIEW -->
+    <section id="view-login" class="view-section">
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Login to access your scan history securely.</p>
+        <div class="card-container form-container">
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <input type="email" id="loginEmail" placeholder="Email Address" required>
+                    <input type="password" id="loginPassword" placeholder="Password" required>
+                </div>
+                <button type="submit">Login</button>
+                <div id="loginMsg" class="error"></div>
+            </form>
+        </div>
+    </section>
+
+    <!-- SIGNUP VIEW -->
+    <section id="view-signup" class="view-section">
+        <h2>Create Account</h2>
+        <p class="subtitle">Join PhishGuard to maintain a safe browsing record.</p>
+        <div class="card-container form-container">
+            <form onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <input type="email" id="signupEmail" placeholder="Email Address" required>
+                    <input type="password" id="signupPassword" placeholder="Password" required>
+                </div>
+                <button type="submit">Sign Up</button>
+                <div id="signupMsg" class="error"></div>
+            </form>
+        </div>
+    </section>
+
+    <!-- DASHBOARD VIEW -->
+    <section id="view-dashboard" class="view-section">
+        <h2>Scan History</h2>
+        <p class="subtitle">Review your past phishing detections and secure checks.</p>
+        <div class="card-container">
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>URL</th>
+                        <th>Result</th>
+                        <th>Confidence</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <!-- Data populated by JS -->
+                </tbody>
+            </table>
+            <div id="dashboardMsg" class="subtitle" style="margin-top: 1rem; display:none;">No history found. Start
+                scanning!</div>
+        </div>
+    </section>
+
+    <!-- CHATBOT UI -->
+    <div id="chatbot-container">
+        <div id="chat-window">
+            <div id="chat-header">
+                <span>PhishGuard Assistant</span>
+                <span style="cursor:pointer" onclick="toggleChat()">×</span>
+            </div>
+            <div id="chat-messages">
+                <div class="message bot-message">
+                    Hello! I'm your PhishGuard personal assistant. Ask me anything about phishing or how to stay safe!
+                </div>
+            </div>
+            <form id="chat-input-area" onsubmit="handleChatSubmit(event)">
+                <input type="text" id="chat-input" placeholder="Ask about phishing..." autocomplete="off">
+                <button type="submit" id="chat-send">Send</button>
+            </form>
+        </div>
+        <div id="chat-toggle" onclick="toggleChat()">
+            <svg viewBox="0 0 24 24">
+                <path d="M20,2H4C2.9,2,2,2.9,2,4v18l4-4h14c1.1,0,2-0.9,2-2V4C22,2.9,21.1,2,20,2z M20,16H5.2L4,17.2V4h16V16z M7,9h10v2H7V9z M7,12h7v2H7V12z"/>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        let currentUserToken = localStorage.getItem('token');
+        const API_BASE = (window.location.protocol === 'file:' || window.location.port === '5500' || window.location.port === '3000') ? 'http://127.0.0.1:8000' : '';
+
+        function updateNav() {
+            const navLinks = document.getElementById('navLinks');
+            if (currentUserToken) {
+                navLinks.innerHTML = `
+                    <a onclick="showView('home')">Home</a>
+                    <a onclick="showView('dashboard')">History</a>
+                    <a onclick="logout()">Logout</a>
+                `;
+            } else {
+                navLinks.innerHTML = `
+                    <a onclick="showView('home')">Home</a>
+                    <a onclick="showView('login')">Login</a>
+                    <a onclick="showView('signup')">Sign Up</a>
+                `;
+            }
+        }
+
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+
+            // clear messages
+            document.getElementById('loginMsg').innerText = '';
+            document.getElementById('signupMsg').innerText = '';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('urlInput').value = '';
+
+            if (viewId === 'dashboard') loadHistory();
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            currentUserToken = null;
+            updateNav();
+            showView('home');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const msgEl = document.getElementById('loginMsg');
+
+            const formData = new URLSearchParams();
+            formData.append('username', email); // OAuth2 expects 'username' form field
+            formData.append('password', password);
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    currentUserToken = data.access_token;
+                    updateNav();
+                    showView('home');
+                } else {
+                    msgEl.innerText = data.detail || 'Login failed';
+                    msgEl.className = 'error';
+                }
+            } catch (err) {
+                console.error("Login Error:", err);
+                msgEl.innerText = 'Network error. Make sure the backend is running.';
+                msgEl.className = 'error';
+            }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const msgEl = document.getElementById('signupMsg');
+
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('password', password);
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/signup`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    msgEl.innerText = 'Account created! Please login.';
+                    msgEl.className = 'success';
+                    setTimeout(() => showView('login'), 2000);
+                } else {
+                    msgEl.innerText = data.detail || 'Signup failed';
+                    msgEl.className = 'error';
+                }
+            } catch (err) {
+                console.error("Signup Error:", err);
+                msgEl.innerText = 'Network error. Make sure the backend is running.';
+                msgEl.className = 'error';
+            }
+        }
+
+        async function checkURL() {
+            const urlInput = document.getElementById('urlInput').value;
+            const resultDiv = document.getElementById('result');
+            if (!urlInput) return;
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerText = 'Analyzing with ML Models...';
+            resultDiv.className = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(currentUserToken && { 'Authorization': `Bearer ${currentUserToken}` })
+                    },
+                    body: JSON.stringify({ url: urlInput })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Prediction failed');
+                }
+
+                const confidencePercent = data.confidence
+                    ? Math.round(data.confidence * 100)
+                    : '--';
+
+                resultDiv.innerHTML = `
+                    Result: ${data.result}
+                    <br>
+                    <span style="font-size: 0.9rem; font-weight: normal; opacity: 0.9;">
+                        Confidence: ${confidencePercent}%
+                    </span>
+                `;
+
+                resultDiv.className =
+                    data.result.toLowerCase() === 'phishing' ? 'phishing' : 'safe';
+
+                loadStatistics();
+
+            } catch (error) {
+                console.error("Check URL Error:", error);
+                resultDiv.innerText = 'Error checking URL. Backend ML integration might be failing.';
+                resultDiv.className = 'phishing';
+            }
+        }
+
+        async function loadHistory() {
+            if (!currentUserToken) return;
+            const tbody = document.getElementById('historyBody');
+            const msg = document.getElementById('dashboardMsg');
+            tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+
+            try {
+                const res = await fetch(`${API_BASE}/history`, {
+                    headers: { 'Authorization': `Bearer ${currentUserToken}` }
+                });
+                const data = await res.json();
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    msg.style.display = 'block';
+                } else {
+                    msg.style.display = 'none';
+                    data.forEach(item => {
+                        const tr = document.createElement('tr');
+                        const date = new Date(item.timestamp).toLocaleString();
+                        const badgeClass = item.result.toLowerCase() === 'phishing' ? 'phishing' : 'safe';
+                        const confDisplay = item.confidence ? `${Math.round(item.confidence * 100)}%` : 'N/A';
+                        tr.innerHTML = `
+                            <td>${date}</td>
+                            <td style="word-break: break-all;">${item.url}</td>
+                            <td><span class="badge ${badgeClass}">${item.result}</span></td>
+                            <td>${confDisplay}</td>
+                            <td><button class="inline-btn delete-btn" onclick="deleteHistory(${item.id})">Delete</button></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (error) {
+                tbody.innerHTML = '<tr><td colspan="4">Error loading history.</td></tr>';
+            }
+        }
+
+        async function deleteHistory(id) {
+            if (!confirm("Delete this record?")) return;
+            try {
+                const res = await fetch(`${API_BASE}/history/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${currentUserToken}` }
+                });
+                if (res.ok) loadHistory();
+            } catch (e) {
+                console.error("Delete History Error:", e);
+                alert("Failed to delete record");
+            }
+        }
+
+        let globalChartInstance = null;
+
+        async function loadStatistics() {
+            try {
+                const headers = {};
+                if (currentUserToken) headers['Authorization'] = `Bearer ${currentUserToken}`;
+
+                const res = await fetch(`${API_BASE}/statistics`, { headers: headers });
+                const data = await res.json();
+
+                // Determine if we show personal stats or global stats
+                const isPersonal = data.personal_total_scans !== null && data.personal_total_scans !== undefined;
+
+                const total = isPersonal ? data.personal_total_scans : (data.total_scans || 0);
+                const phishing = isPersonal ? data.personal_phishing_detected : (data.phishing_detected || 0);
+                const safe = isPersonal ? data.personal_safe_detected : (data.safe_detected || 0);
+
+                document.getElementById('statTotal').innerText = total;
+                document.getElementById('statPhishing').innerText = phishing;
+                document.getElementById('statSafe').innerText = safe;
+
+                const avgConf = data.average_confidence
+                    ? `${Math.round(data.average_confidence * 100)}%`
+                    : '-';
+                document.getElementById('statAvgConf').innerText = avgConf;
+
+                // Render Chart 
+                if (total > 0) {
+                    document.getElementById('globalChartContainer').style.display = 'block';
+                    const ctx = document.getElementById('globalStatsChart').getContext('2d');
+                    const chartTitle = isPersonal ? 'Your URLs Analyzed' : 'Platform URLs Analyzed';
+
+                    if (globalChartInstance) {
+                        globalChartInstance.data.datasets[0].data = [safe, phishing];
+                        globalChartInstance.options.plugins.title.text = chartTitle;
+                        globalChartInstance.update();
+                    } else {
+                        globalChartInstance = new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Safe', 'Phishing'],
+                                datasets: [{
+                                    data: [safe, phishing],
+                                    backgroundColor: [
+                                        'rgba(34, 197, 94, 0.8)', // Safe Green
+                                        'rgba(244, 63, 94, 0.8)'  // Phishing Red
+                                    ],
+                                    borderColor: [
+                                        'rgba(34, 197, 94, 1)',
+                                        'rgba(244, 63, 94, 1)'
+                                    ],
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: { color: '#f8fafc', font: { family: 'Raleway' } }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: chartTitle,
+                                        color: '#00f2fe',
+                                        font: { family: 'Orbitron', size: 16 }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    document.getElementById('globalChartContainer').style.display = 'none';
+                }
+            } catch (e) {
+                console.error("Failed to load statistics", e);
+            }
+        }
+
+        // Initialize App
+        updateNav();
+        loadStatistics();
+
+        // Chatbot Logic
+        function toggleChat() {
+            const window = document.getElementById('chat-window');
+            window.style.display = (window.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            input.value = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                addMessage(data.response, 'bot');
+            } catch (error) {
+                console.error("Chat Error:", error);
+                addMessage("I'm having trouble connecting to the server. Please try again later.", 'bot');
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${sender}-message`;
+            div.innerText = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>

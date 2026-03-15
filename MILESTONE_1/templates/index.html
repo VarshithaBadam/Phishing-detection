@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phishing Detection System</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        input, select, button { padding: 10px; margin-top: 10px; width: 100%; }
+        .result { margin-top: 20px; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<h2>🔐 Phishing Website Detection</h2>
+
+<form method="post">
+    <input type="text" name="url" placeholder="Enter URL" required>
+
+    <select name="model">
+        <option value="logistic">Logistic Regression</option>
+        <option value="randomforest">Random Forest</option>
+        <option value="xgboost">XGBoost</option>
+    </select>
+
+    <button type="submit">Predict</button>
+</form>
+
+{% if prediction %}
+<div class="result">
+    <p><strong>Model:</strong> {{ model }}</p>
+    <p><strong>Prediction:</strong> {{ prediction }}</p>
+    <p><strong>Confidence:</strong> {{ confidence }}</p>
+</div>
+{% endif %}
+
+</body>
+</html>

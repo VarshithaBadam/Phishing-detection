@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User History | PhishGuard</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Raleway:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background: #0f172a;
+            color: var(--light);
+            font-family: 'Raleway', sans-serif;
+            min-height: 100vh;
+        }
+
+        nav {
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .container {
+            padding: 4rem 5%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 2rem;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--glass);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--primary);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .tag {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .tag-phishing {
+            background: rgba(244, 63, 94, 0.2);
+            color: #fb7185;
+        }
+
+        .tag-safe {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .chart-box {
+            background: var(--glass);
+            padding: 1.5rem;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Stats Grid styles copied from index.html */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            margin-bottom: 3rem;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">PHISHGUARD</div>
+        <div>
+            <a href="/" style="color: white; text-decoration: none; margin-right: 2rem;">Home</a>
+            <a href="#" onclick="logout()" style="color: white; text-decoration: none;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>SCAN HISTORY</h2>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-box">
+                <div class="stat-value" id="statTotal">-</div>
+                <div class="stat-label">Total Scans</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="statPhishing">-</div>
+                <div class="stat-label">Threats Blocked</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="statSafe">-</div>
+                <div class="stat-label">Safe URLs Checked</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="statAvgConf">-</div>
+                <div class="stat-label">Avg Confidence</div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid" id="chartsGrid" style="display: none;">
+            <div class="chart-box">
+                <canvas id="ratioChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="confidenceChart"></canvas>
+            </div>
+        </div>
+
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>URL Analyzed</th>
+                    <th>Result</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                <!-- Data will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/login';
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+
+        async function deleteItem(id) {
+            if (!confirm('Are you sure you want to delete this record?')) return;
+            try {
+                const response = await fetch(`/history/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    loadHistory();
+                } else {
+                    alert('Failed to delete record');
+                }
+            } catch (err) {
+                console.error('Delete error:', err);
+            }
+        }
+
+        let ratioChart = null;
+        let confChart = null;
+
+        function renderCharts(data) {
+            if (data.length === 0) {
+                document.getElementById('chartsGrid').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('chartsGrid').style.display = 'grid';
+
+            let safeCount = 0;
+            let phishingCount = 0;
+
+            // For the line chart, we want the oldest first (left to right)
+            // But API returns newest first, so we reverse a sliced copy for the chart
+            const chartData = [...data].reverse();
+            const labels = [];
+            const confidences = [];
+
+            chartData.forEach(item => {
+                if (item.result.toLowerCase() === 'safe') safeCount++;
+                else phishingCount++;
+
+                labels.push(new Date(item.timestamp).toLocaleDateString());
+                // If it's safe, plotting confidence might be 100 or specific. Let's just plot the raw confidence.
+                confidences.push(item.confidence ? Math.round(item.confidence * 100) : 0);
+            });
+
+            // Ratio Doughnut Chart
+            const ctxRatio = document.getElementById('ratioChart').getContext('2d');
+            if (ratioChart) {
+                ratioChart.data.datasets[0].data = [safeCount, phishingCount];
+                ratioChart.update();
+            } else {
+                ratioChart = new Chart(ctxRatio, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Safe', 'Phishing'],
+                        datasets: [{
+                            data: [safeCount, phishingCount],
+                            backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(244, 63, 94, 0.8)'],
+                            borderColor: ['rgba(34, 197, 94, 1)', 'rgba(244, 63, 94, 1)'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { labels: { color: '#f8fafc', font: { family: 'Raleway' } } },
+                            title: { display: true, text: 'Your Scan Results', color: '#00f2fe', font: { family: 'Orbitron', size: 14 } }
+                        }
+                    }
+                });
+            }
+
+            // Confidence Line Chart
+            const ctxConf = document.getElementById('confidenceChart').getContext('2d');
+            if (confChart) {
+                confChart.data.labels = labels;
+                confChart.data.datasets[0].data = confidences;
+                confChart.update();
+            } else {
+                confChart = new Chart(ctxConf, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Model Confidence (%)',
+                            data: confidences,
+                            borderColor: '#00f2fe',
+                            backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#f8fafc', font: { family: 'Raleway' } } },
+                            title: { display: true, text: 'Confidence Over Time', color: '#00f2fe', font: { family: 'Orbitron', size: 14 } }
+                        }
+                    }
+                });
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/history', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+
+                    renderCharts(data); // Render the new charts
+
+                    const tbody = document.getElementById('historyBody');
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem; color: #94a3b8;">No scan history found. Start checking URLs on the home page!</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.map(record => `
+                        <tr>
+                            <td>${new Date(record.timestamp).toLocaleString()}</td>
+                            <td style="word-break: break-all;">${record.url}</td>
+                            <td><span class="tag ${record.result === 'Phishing' ? 'tag-phishing' : 'tag-safe'}">${record.result}</span></td>
+                            <td><button onclick="deleteItem(${record.id})" style="background: rgba(244, 63, 94, 0.1); color: #fb7185; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--accent); cursor: pointer; font-size: 0.8rem;">Delete</button></td>
+                        </tr>
+                    `).join('');
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch (err) {
+                console.error('Failed to load history');
+            }
+        }
+
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/statistics', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const isPersonal = data.personal_total_scans !== null && data.personal_total_scans !== undefined;
+
+                    const total = isPersonal ? data.personal_total_scans : (data.total_scans || 0);
+                    const phishing = isPersonal ? data.personal_phishing_detected : (data.phishing_detected || 0);
+                    const safe = isPersonal ? data.personal_safe_detected : (data.safe_detected || 0);
+
+                    document.getElementById('statTotal').innerText = total;
+                    document.getElementById('statPhishing').innerText = phishing;
+                    document.getElementById('statSafe').innerText = safe;
+                    const avgConf = data.average_confidence ? `${Math.round(data.average_confidence * 100)}%` : '-';
+                    document.getElementById('statAvgConf').innerText = avgConf;
+                }
+            } catch (err) {
+                console.error('Failed to load statistics', err);
+            }
+        }
+
+        loadHistory();
+        loadStatistics();
+    </script>
+</body>
+
+</html>
