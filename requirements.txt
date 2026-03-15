@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+mangum
 pandas
 numpy
 scikit-learn
@@ -8,4 +9,3 @@ beautifulsoup4
 requests
 jinja2
 python-multipart
-mangum
