@@ -44,6 +44,8 @@ app.add_middleware(
 trained_model = None
 scaler = None
 try:
+    BASE_DIR = os.getcwd()
+    model = joblib.load(os.path.join(BASE_DIR, "models/xgb_model.pkl"))
     model_path = os.path.join(os.path.dirname(__file__), "../../../models/xgb_model.pkl")
     scaler_path = os.path.join(os.path.dirname(__file__), "../../../models/scaler.pkl")
     trained_model = joblib.load(model_path)
