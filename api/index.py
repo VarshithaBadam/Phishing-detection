@@ -1,7 +1,8 @@
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# allow python to find project folders
+sys.path.append(os.getcwd())
 
 from mangum import Mangum
 from MILESTONE_2.phishgaurd.app.main import app
