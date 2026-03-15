@@ -1,9 +1,7 @@
-import sys
-import os
+from fastapi import FastAPI
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+app = FastAPI()
 
-from mangum import Mangum
-from MILESTONE_2.phishgaurd.app.main import app
-
-handler = Mangum(app)
+@app.get("/")
+def home():
+    return {"message": "PhishGuard API Running"}
