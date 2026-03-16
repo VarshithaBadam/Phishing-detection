@@ -5,6 +5,6 @@ import os
 sys.path.insert(0, os.getcwd())
 
 from mangum import Mangum
-from MILESTONE_2.phishgaurd.app.main import app
+from MILESTONE_2.phishguard.app.main import app
 
 handler = Mangum(app)
