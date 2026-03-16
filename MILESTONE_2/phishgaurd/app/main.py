@@ -21,17 +21,14 @@ from . import models, schemas, crud
 from .database import Base, engine, SessionLocal
 
 # SECURITY CONFIG
-SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_change_me_in_production")
+SECRET_KEY = "a_very_secret_key_change_me_in_production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # DATABASE INIT
-try:
-    Base.metadata.create_all(bind=engine)
-except Exception as e:
-    print(f"Warning: Could not initialize database: {e}")
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="PhishGuard - Phishing Detection System")
 
@@ -47,44 +44,29 @@ app.add_middleware(
 trained_model = None
 scaler = None
 try:
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(BASE_DIR, "../../../models/xgb_model.pkl")
-    scaler_path = os.path.join(BASE_DIR, "../../../models/scaler.pkl")
-    
-    if os.path.exists(model_path):
-        trained_model = joblib.load(model_path)
-        print(f"Pre-trained XGBoost model loaded successfully from {model_path}.")
-    else:
-        print(f"Warning: Model file not found at {model_path}")
-
-    if os.path.exists(scaler_path):
-        scaler = joblib.load(scaler_path)
-        print(f"Scaler loaded successfully from {scaler_path}.")
-    else:
-        print(f"Warning: Scaler file not found at {scaler_path}")
-        
+    BASE_DIR = os.getcwd()
+    model = joblib.load(os.path.join(BASE_DIR, "models/xgb_model.pkl"))
+    model_path = os.path.join(os.path.dirname(__file__), "../../../models/xgb_model.pkl")
+    scaler_path = os.path.join(os.path.dirname(__file__), "../../../models/scaler.pkl")
+    trained_model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
+    print("Pre-trained XGBoost model loaded successfully.")
 except Exception as e:
-    print(f"Warning: Could not load ML model components. Error: {e}")
+    print(f"Warning: Could not load ML model at {model_path}. Error: {e}")
 
 # STATIC & TEMPLATES
-# Create absolute paths for static and templates
-TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+# Create directories if they don't exist
+os.makedirs("app/templates", exist_ok=True)
+os.makedirs("app/static", exist_ok=True)
 
-# Note: os.makedirs removed as Vercel is read-only.
-# Ensure directories exist in your repository.
-
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-templates = Jinja2Templates(directory=TEMPLATE_DIR)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
 
 # DEPENDENCY
 def get_db():
     db = SessionLocal()
     try:
         yield db
-    except Exception as e:
-        print(f"Database Session Error: {e}")
-        raise
     finally:
         db.close()
 
