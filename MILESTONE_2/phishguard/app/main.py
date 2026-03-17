@@ -3,9 +3,16 @@ import re
 from datetime import datetime, timedelta
 from typing import Optional
 import urllib.parse
-import joblib
 import requests
 from bs4 import BeautifulSoup
+
+try:
+    from models.predictor import LightweightPredictor
+except ImportError:
+    # Handle path issues in different environments
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../../"))
+    from models.predictor import LightweightPredictor
 
 from fastapi import FastAPI, Depends, HTTPException, status, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -41,29 +48,21 @@ app.add_middleware(
 )
 
 # GLOBALLY LOAD ML MODEL ONCE
-trained_model = None
-scaler = None
+predictor = None
 try:
     # Use paths relative to this file
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(current_dir, "../../../models/xgb_model.pkl")
-    scaler_path = os.path.join(current_dir, "../../../models/scaler.pkl")
+    model_path = os.path.join(current_dir, "../../../models/xgb_raw.json")
+    scaler_params_path = os.path.join(current_dir, "../../../models/scaler_params.json")
     
-    # Check if files exist before loading
     if os.path.exists(model_path):
-        trained_model = joblib.load(model_path)
-        print(f"Pre-trained XGBoost model loaded from {model_path}")
+        predictor = LightweightPredictor(model_path, scaler_params_path)
+        print(f"Lightweight XGBoost predictor initialized with {model_path}")
     else:
         print(f"Warning: Model file not found at {model_path}")
         
-    if os.path.exists(scaler_path):
-        scaler = joblib.load(scaler_path)
-        print(f"Scaler loaded from {scaler_path}")
-    else:
-        print(f"Warning: Scaler file not found at {scaler_path}")
-        
 except Exception as e:
-    print(f"Warning: Could not load ML model. Error: {e}")
+    print(f"Warning: Could not initialize predictor. Error: {e}")
 
 # STATIC & TEMPLATES
 # Use paths relative to this file
@@ -215,21 +214,17 @@ async def predict_url(payload: schemas.URLRequest, db: Session = Depends(get_db)
     def extract_features(url):
         return url_features(url)
 
-    if trained_model is None:
+    if predictor is None:
         return {"url": url, "result": "Error Loading ML Model", "confidence": 0}
 
     features = extract_features(url)
-    if scaler is not None:
-        features = scaler.transform([features])[0]
     try:
-        prediction = trained_model.predict([features])[0]
-        probabilities = trained_model.predict_proba([features])[0]
-        confidence = max(probabilities)
+        prediction, confidence = predictor.predict(features)
     except Exception as e:
         import traceback
         print(f"Prediction Error: {e}")
         traceback.print_exc()
-        prediction = "phishing" # assume phishing if prediction fails for safety
+        prediction = 1 # assume phishing if prediction fails for safety
         confidence = 0.99
 
     result = "Phishing" if str(prediction).lower() == "phishing" or prediction == 1 else "Safe"

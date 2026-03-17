@@ -1,10 +1,8 @@
 fastapi
 uvicorn
 mangum
-pandas
 numpy
-scikit-learn
-joblib
+xgboost
 beautifulsoup4
 requests
 jinja2
@@ -12,4 +10,3 @@ python-multipart
 sqlalchemy
 python-jose[cryptography]
 bcrypt
-xgboost
