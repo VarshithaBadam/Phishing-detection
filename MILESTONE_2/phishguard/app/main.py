@@ -44,23 +44,39 @@ app.add_middleware(
 trained_model = None
 scaler = None
 try:
-    BASE_DIR = os.getcwd()
-    model = joblib.load(os.path.join(BASE_DIR, "models/xgb_model.pkl"))
-    model_path = os.path.join(os.path.dirname(__file__), "../../../models/xgb_model.pkl")
-    scaler_path = os.path.join(os.path.dirname(__file__), "../../../models/scaler.pkl")
-    trained_model = joblib.load(model_path)
-    scaler = joblib.load(scaler_path)
-    print("Pre-trained XGBoost model loaded successfully.")
+    # Use paths relative to this file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(current_dir, "../../../models/xgb_model.pkl")
+    scaler_path = os.path.join(current_dir, "../../../models/scaler.pkl")
+    
+    # Check if files exist before loading
+    if os.path.exists(model_path):
+        trained_model = joblib.load(model_path)
+        print(f"Pre-trained XGBoost model loaded from {model_path}")
+    else:
+        print(f"Warning: Model file not found at {model_path}")
+        
+    if os.path.exists(scaler_path):
+        scaler = joblib.load(scaler_path)
+        print(f"Scaler loaded from {scaler_path}")
+    else:
+        print(f"Warning: Scaler file not found at {scaler_path}")
+        
 except Exception as e:
-    print(f"Warning: Could not load ML model at {model_path}. Error: {e}")
+    print(f"Warning: Could not load ML model. Error: {e}")
 
 # STATIC & TEMPLATES
-# Create directories if they don't exist
-os.makedirs("app/templates", exist_ok=True)
-os.makedirs("app/static", exist_ok=True)
+# Use paths relative to this file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(current_dir, "static")
+templates_dir = os.path.join(current_dir, "templates")
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
+# Ensure directories exist (Vercel might be read-only but these should be in the bundle)
+os.makedirs(static_dir, exist_ok=True)
+os.makedirs(templates_dir, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+templates = Jinja2Templates(directory=templates_dir)
 
 # DEPENDENCY
 def get_db():
